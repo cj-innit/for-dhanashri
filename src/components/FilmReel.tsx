@@ -80,39 +80,39 @@ const FilmReel = ({ onAllViewed }: FilmReelProps) => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="font-emilys text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-foreground text-center mb-8 px-4 drop-shadow-lg"
-      >
-        HAPPY VALENTINES DAY BAE!
+        className="font-emilys text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-foreground text-center mb-8 px-4 drop-shadow-lg">
+        HAPPY  VALENTINES DAY BAE!
+
       </motion.h1>
 
       {/* Film Strip Container */}
       <div className="relative w-full" style={{ height: "40vh" }}>
         {/* Top sprocket holes - transparent cutouts */}
         <div className="absolute top-0 left-0 right-0 h-6 bg-[hsl(0,0%,0%)] z-10 flex items-center justify-around px-2">
-          {sprocketHoles.map((_, i) => (
-            <div
-              key={`top-${i}`}
-              className="w-4 h-5 rounded-sm flex-shrink-0"
-              style={{
-                background: "hsl(var(--background))",
-                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
-              }}
-            />
-          ))}
+          {sprocketHoles.map((_, i) =>
+          <div
+            key={`top-${i}`}
+            className="w-4 h-5 rounded-sm flex-shrink-0"
+            style={{
+              background: "hsl(var(--background))",
+              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)"
+            }} />
+
+          )}
         </div>
 
         {/* Bottom sprocket holes */}
         <div className="absolute bottom-0 left-0 right-0 h-6 bg-[hsl(0,0%,0%)] z-10 flex items-center justify-around px-2">
-          {sprocketHoles.map((_, i) => (
-            <div
-              key={`bot-${i}`}
-              className="w-4 h-5 rounded-sm flex-shrink-0"
-              style={{
-                background: "hsl(var(--background))",
-                boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)",
-              }}
-            />
-          ))}
+          {sprocketHoles.map((_, i) =>
+          <div
+            key={`bot-${i}`}
+            className="w-4 h-5 rounded-sm flex-shrink-0"
+            style={{
+              background: "hsl(var(--background))",
+              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)"
+            }} />
+
+          )}
         </div>
 
         {/* Black film borders */}
@@ -122,8 +122,8 @@ const FilmReel = ({ onAllViewed }: FilmReelProps) => {
         <div
           ref={scrollRef}
           className="absolute inset-0 overflow-x-hidden overflow-y-hidden bg-[hsl(0,0%,0%)]"
-          style={{ scrollbarWidth: "none" }}
-        >
+          style={{ scrollbarWidth: "none" }}>
+
           <div className="flex h-full items-center gap-1 px-1 py-7">
             {images.map((item, i) => {
               const realIndex = i % ITEM_COUNT;
@@ -136,45 +136,45 @@ const FilmReel = ({ onAllViewed }: FilmReelProps) => {
                   className="relative flex-shrink-0 h-[calc(100%-8px)] cursor-pointer"
                   style={{
                     aspectRatio: "9/16",
-                    perspective: "800px",
-                  }}
-                >
+                    perspective: "800px"
+                  }}>
+
                   <AnimatePresence mode="wait" initial={false}>
-                    {!isFlipped ? (
-                      <motion.div
-                        key="front"
-                        initial={{ rotateY: 90 }}
-                        animate={{ rotateY: 0 }}
-                        exit={{ rotateY: -90 }}
-                        transition={{ duration: 0.4 }}
-                        className="absolute inset-0 rounded-sm overflow-hidden"
-                      >
+                    {!isFlipped ?
+                    <motion.div
+                      key="front"
+                      initial={{ rotateY: 90 }}
+                      animate={{ rotateY: 0 }}
+                      exit={{ rotateY: -90 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0 rounded-sm overflow-hidden">
+
                         <img
-                          src={item.image}
-                          alt={`Memory ${realIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        {!viewed.has(realIndex) && (
-                          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                        )}
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="back"
-                        initial={{ rotateY: 90 }}
-                        animate={{ rotateY: 0 }}
-                        exit={{ rotateY: -90 }}
-                        transition={{ duration: 0.4 }}
-                        className="absolute inset-0 rounded-sm bg-[hsl(0,0%,8%)] flex items-center justify-center p-3"
-                      >
+                        src={item.image}
+                        alt={`Memory ${realIndex + 1}`}
+                        className="w-full h-full object-cover" />
+
+                        {!viewed.has(realIndex) &&
+                      <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary animate-pulse" />
+                      }
+                      </motion.div> :
+
+                    <motion.div
+                      key="back"
+                      initial={{ rotateY: 90 }}
+                      animate={{ rotateY: 0 }}
+                      exit={{ rotateY: -90 }}
+                      transition={{ duration: 0.4 }}
+                      className="absolute inset-0 rounded-sm bg-[hsl(0,0%,8%)] flex items-center justify-center p-3">
+
                         <p className="font-lifesavers text-white text-center text-xs sm:text-sm font-bold leading-relaxed">
                           {item.caption}
                         </p>
                       </motion.div>
-                    )}
+                    }
                   </AnimatePresence>
-                </div>
-              );
+                </div>);
+
             })}
           </div>
         </div>
@@ -184,8 +184,8 @@ const FilmReel = ({ onAllViewed }: FilmReelProps) => {
       <p className="font-outfit text-foreground/70 text-sm mt-4">
         {viewed.size}/{ITEM_COUNT} memories viewed — click each photo to reveal its story
       </p>
-    </section>
-  );
+    </section>);
+
 };
 
 export default FilmReel;
