@@ -47,6 +47,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        valentine: {
+          red: "hsl(var(--valentine-red))",
+          pink: "hsl(var(--valentine-pink))",
+          deep: "hsl(var(--valentine-deep))",
+          gold: "hsl(var(--valentine-gold))",
+        },
+        wordle: {
+          correct: "hsl(var(--wordle-correct))",
+          present: "hsl(var(--wordle-present))",
+          absent: "hsl(var(--wordle-absent))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
