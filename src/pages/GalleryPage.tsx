@@ -1,18 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import CustomCursor from "@/components/CustomCursor";
-import CaptchaGate from "@/components/CaptchaGate";
+import FilmReel from "@/components/FilmReel";
 import FooterBar from "@/components/FooterBar";
 
-const Index = () => {
+const GalleryPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen overflow-hidden h-screen">
+    <div className="relative min-h-screen">
       <CustomCursor />
-      <CaptchaGate onVerified={() => navigate("/gallery")} />
+      <FilmReel onAllViewed={() => navigate("/wordle")} />
       <FooterBar />
     </div>
   );
 };
 
-export default Index;
+export default GalleryPage;

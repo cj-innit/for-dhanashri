@@ -1,18 +1,18 @@
 import { useNavigate } from "react-router-dom";
 import CustomCursor from "@/components/CustomCursor";
-import CaptchaGate from "@/components/CaptchaGate";
+import WordleGame from "@/components/WordleGame";
 import FooterBar from "@/components/FooterBar";
 
-const Index = () => {
+const WordlePage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="relative min-h-screen overflow-hidden h-screen">
+    <div className="relative min-h-screen flex flex-col items-center justify-center">
       <CustomCursor />
-      <CaptchaGate onVerified={() => navigate("/gallery")} />
+      <WordleGame onAllComplete={() => navigate("/finale")} />
       <FooterBar />
     </div>
   );
 };
 
-export default Index;
+export default WordlePage;
