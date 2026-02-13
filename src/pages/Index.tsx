@@ -16,7 +16,7 @@ const Index = () => {
     <div className="relative h-screen overflow-hidden flex items-center justify-center px-4">
       <div
         className="page-bg-layer"
-        style={{ backgroundImage: "url('/background_images/start_bg.png')" }}
+        style={{ backgroundImage: "url('/background_images/global_bg.JPG')" }}
       />
       <div className="page-bg-blur" />
       <div className="page-bg-overlay" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.24), rgba(0,0,0,0.8))" }} />

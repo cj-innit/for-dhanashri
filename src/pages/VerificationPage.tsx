@@ -19,9 +19,8 @@ const VerificationPage = () => {
     <div className="relative h-screen overflow-hidden">
       <div
         className="page-bg-layer"
-        style={{ backgroundImage: "url('/background_images/captcha_bg.png')" }}
+        style={{ backgroundImage: "url('/background_images/global_bg.JPG')" }}
       />
-      <div className="page-bg-blur" />
       <div className="page-bg-overlay" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0.62))" }} />
 
       <div className="page-content-layer h-full">

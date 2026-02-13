@@ -24,7 +24,9 @@ const HeartIcon = () => (
 const CustomCursor = ({ variant = "heart" }: CustomCursorProps) => {
   const [visible, setVisible] = useState(false);
 
-  const springConfig = { stiffness: 200, damping: 30 };
+  // Browsers can't read OS mouse-sensitivity settings directly.
+  // Tune spring for faster, tighter tracking to feel more responsive.
+  const springConfig = { stiffness: 270, damping: 22, mass: 0.45 };
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const cursorX = useSpring(rawX, springConfig);

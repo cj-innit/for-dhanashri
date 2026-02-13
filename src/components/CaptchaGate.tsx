@@ -8,6 +8,20 @@ interface CaptchaGateProps {
 
 type CaptchaPhase = "idle" | "invalid_shake" | "scanning";
 
+// Single source of truth for retina-scan pacing.
+const SCAN_TIMELINE = {
+  activateAtMs: 550,
+  completeAtMs: 4000,
+  statusSteps: [
+    { atMs: 1300, text: "MATCHING BIOMETRIC SIGNATURE TO DHANASHRI" },
+    { atMs: 3500, text: "ACCESS GRANTED" },
+  ],
+} as const;
+
+const getProgressTransitionMs = () => {
+  return Math.max(300, SCAN_TIMELINE.completeAtMs - SCAN_TIMELINE.activateAtMs);
+};
+
 const CaptchaGate = ({ onVerified }: CaptchaGateProps) => {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [robotChecked, setRobotChecked] = useState(false);
@@ -48,22 +62,22 @@ const CaptchaGate = ({ onVerified }: CaptchaGateProps) => {
 
     clearScanTimers();
 
+    const sortedStatusSteps = [...SCAN_TIMELINE.statusSteps]
+      .sort((a, b) => a.atMs - b.atMs)
+      .filter((step) => step.atMs < SCAN_TIMELINE.completeAtMs);
+
     scheduleScanStep(() => {
       setScanActive(true);
       setScanProgress(100);
-    }, 550);
+    }, SCAN_TIMELINE.activateAtMs);
 
-    scheduleScanStep(() => {
-      setScanStatus("MATCHING BIOMETRIC SIGNATURE TO DHANASHRI");
-    }, 1300);
+    sortedStatusSteps.forEach((step) => {
+      scheduleScanStep(() => {
+        setScanStatus(step.text);
+      }, step.atMs);
+    });
 
-    scheduleScanStep(() => {
-      setScanStatus("ACCESS GRANTED");
-    }, 3500);
-
-    scheduleScanStep(() => {
-      onVerified();
-    }, 4000);
+    scheduleScanStep(onVerified, SCAN_TIMELINE.completeAtMs);
   }, [phase, onVerified]);
 
   const toggleTile = (index: number) => {
@@ -228,7 +242,7 @@ const CaptchaGate = ({ onVerified }: CaptchaGateProps) => {
               <div className="mt-6 w-full max-w-[245px] h-2 rounded-full bg-cyan-100/10 border border-cyan-200/25 overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-cyan-300 via-cyan-200 to-fuchsia-300 transition-[width] ease-linear"
-                  style={{ width: `${scanProgress}%`, transitionDuration: "1500ms" }}
+                  style={{ width: `${scanProgress}%`, transitionDuration: `${getProgressTransitionMs()}ms` }}
                 />
               </div>
             </div>

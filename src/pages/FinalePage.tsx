@@ -34,9 +34,8 @@ const FinalePage = () => {
     <div className="relative h-screen flex items-center justify-center overflow-hidden">
       <div
         className="page-bg-layer"
-        style={{ backgroundImage: "url('/background_images/finale_bg.png')" }}
+        style={{ backgroundImage: "url('/background_images/global_bg.JPG')" }}
       />
-      <div className="page-bg-blur" />
       <div className="page-bg-overlay" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.32), rgba(0,0,0,0.6))" }} />
 
       {/* Floating hearts background */}
@@ -97,7 +96,7 @@ const FinalePage = () => {
           transition={{ delay: 1 }}
           className="font-lifesavers text-xl sm:text-2xl text-foreground/90 max-w-md font-bold"
         >
-          You are very important to me bae and I believe we can get through anything together. I miss you loads!
+          You are very important to me bae and I believe we can get through anything together. Happy Valentines Day!
         </motion.p>
 
         <motion.p

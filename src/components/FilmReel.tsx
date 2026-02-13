@@ -10,10 +10,13 @@ interface FilmReelProps {
 const DEFAULT_RATIO = 3 / 4;
 const PX_PER_SECOND = 130;
 const FLIP_DURATION_MS = 7000;
+const MANUAL_RESUME_DELAY_MS = 900;
+const WHEEL_SENSITIVITY = 0.95;
 const SPROCKET_COUNT = 28;
 const REEL_COLOR = "#141414";
-const REEL_HEADING = "LIFE IS TRULY A MOVIE WITH YOU BAE!";
-const TYPE_INTERVAL_MS = 75;
+const REEL_HEADING = "LIFE IS TRULY A MOVIE WITH YOU BAE";
+const CODEPEN_LIKE_CHAR_MS = 154;
+const CARET_HIDE_DELAY_MS = 1000;
 
 const FilmReel = ({ onNext }: FilmReelProps) => {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -21,7 +24,14 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<Animation | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const resumeAutoTimerRef = useRef<number | null>(null);
+  const wheelRafRef = useRef<number | null>(null);
+  const pendingWheelDeltaRef = useRef(0);
+  const manualScrubbingRef = useRef(false);
+  const loopDistanceRef = useRef(0);
+  const loopDurationRef = useRef(0);
   const pausedRef = useRef(false);
+  const hasActiveFlipRef = useRef(false);
 
   const [laneHeight, setLaneHeight] = useState(0);
   const [ratios, setRatios] = useState<number[]>([]);
@@ -30,6 +40,7 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
   const [flippedCardKey, setFlippedCardKey] = useState<number | null>(null);
   const [viewedMemories, setViewedMemories] = useState<Set<number>>(new Set());
   const [typedHeading, setTypedHeading] = useState("");
+  const [showCaret, setShowCaret] = useState(true);
   const topMaskId = useId();
   const bottomMaskId = useId();
 
@@ -39,9 +50,13 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
   useEffect(() => {
     pausedRef.current = isPaused;
     if (!animationRef.current) return;
-    if (isPaused) animationRef.current.pause();
+    if (isPaused || manualScrubbingRef.current) animationRef.current.pause();
     else animationRef.current.play();
   }, [isPaused]);
+
+  useEffect(() => {
+    hasActiveFlipRef.current = flippedCardKey !== null;
+  }, [flippedCardKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +82,8 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
 
     animationRef.current?.cancel();
     animationRef.current = null;
+    loopDistanceRef.current = 0;
+    loopDurationRef.current = 0;
     track.style.transform = "translateX(0)";
     if (!assetsReady) return;
 
@@ -75,12 +92,14 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
     if (!Number.isFinite(halfWidth) || halfWidth <= 0) return;
 
     const duration = (halfWidth / PX_PER_SECOND) * 1000;
+    loopDistanceRef.current = halfWidth;
+    loopDurationRef.current = duration;
     const anim = track.animate(
       [{ transform: "translateX(0)" }, { transform: `translateX(-${halfWidth}px)` }],
       { duration, easing: "linear", iterations: Infinity },
     );
 
-    if (pausedRef.current) anim.pause();
+    if (pausedRef.current || manualScrubbingRef.current) anim.pause();
     animationRef.current = anim;
   }, [assetsReady]);
 
@@ -111,26 +130,111 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
     return () => {
       animationRef.current?.cancel();
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+      if (resumeAutoTimerRef.current !== null) window.clearTimeout(resumeAutoTimerRef.current);
+      if (wheelRafRef.current !== null) window.cancelAnimationFrame(wheelRafRef.current);
     };
   }, []);
 
   useEffect(() => {
     setTypedHeading("");
+    setShowCaret(true);
     let nextIndex = 0;
+    let hideCaretTimeoutId: number | null = null;
     const timerId = window.setInterval(() => {
       nextIndex += 1;
       setTypedHeading(REEL_HEADING.slice(0, nextIndex));
-      if (nextIndex >= REEL_HEADING.length) window.clearInterval(timerId);
-    }, TYPE_INTERVAL_MS);
+      if (nextIndex >= REEL_HEADING.length) {
+        window.clearInterval(timerId);
+        hideCaretTimeoutId = window.setTimeout(() => {
+          setShowCaret(false);
+        }, CARET_HIDE_DELAY_MS);
+      }
+    }, CODEPEN_LIKE_CHAR_MS);
 
-    return () => window.clearInterval(timerId);
+    return () => {
+      window.clearInterval(timerId);
+      if (hideCaretTimeoutId !== null) window.clearTimeout(hideCaretTimeoutId);
+    };
   }, []);
 
   
+  const clearManualTimers = useCallback(() => {
+    if (resumeAutoTimerRef.current !== null) {
+      window.clearTimeout(resumeAutoTimerRef.current);
+      resumeAutoTimerRef.current = null;
+    }
+    if (wheelRafRef.current !== null) {
+      window.cancelAnimationFrame(wheelRafRef.current);
+      wheelRafRef.current = null;
+    }
+    pendingWheelDeltaRef.current = 0;
+  }, []);
+
+  const wrapTime = (time: number, duration: number) => {
+    const wrapped = time % duration;
+    return wrapped < 0 ? wrapped + duration : wrapped;
+  };
+
+  const applyPendingScrub = useCallback(() => {
+    wheelRafRef.current = null;
+
+    const anim = animationRef.current;
+    const loopDistance = loopDistanceRef.current;
+    const loopDuration = loopDurationRef.current;
+    const deltaPx = pendingWheelDeltaRef.current;
+    pendingWheelDeltaRef.current = 0;
+
+    if (!anim || !loopDistance || !loopDuration || deltaPx === 0) return;
+
+    manualScrubbingRef.current = true;
+    anim.pause();
+
+    const currentTime = typeof anim.currentTime === "number" ? anim.currentTime : 0;
+    const deltaTime = (deltaPx / loopDistance) * loopDuration;
+    anim.currentTime = wrapTime(currentTime + deltaTime, loopDuration);
+  }, []);
+
+  useEffect(() => {
+    const lane = laneRef.current;
+    if (!lane) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!assetsReady || hasActiveFlipRef.current || pausedRef.current) return;
+      if (!animationRef.current || loopDistanceRef.current <= 0 || loopDurationRef.current <= 0) return;
+
+      event.preventDefault();
+
+      const dominantDelta =
+        Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      pendingWheelDeltaRef.current += dominantDelta * WHEEL_SENSITIVITY;
+
+      if (wheelRafRef.current === null) {
+        wheelRafRef.current = window.requestAnimationFrame(applyPendingScrub);
+      }
+
+      if (resumeAutoTimerRef.current !== null) window.clearTimeout(resumeAutoTimerRef.current);
+      resumeAutoTimerRef.current = window.setTimeout(() => {
+        resumeAutoTimerRef.current = null;
+        const anim = animationRef.current;
+        if (!anim || hasActiveFlipRef.current || pausedRef.current) return;
+        manualScrubbingRef.current = false;
+        anim.play();
+      }, MANUAL_RESUME_DELAY_MS);
+    };
+
+    lane.addEventListener("wheel", handleWheel, { passive: false });
+    return () => {
+      lane.removeEventListener("wheel", handleWheel);
+    };
+  }, [assetsReady, applyPendingScrub]);
 
   const handleCardClick = useCallback((cardKey: number, memoryIndex: number) => {
     if (flippedCardKey !== null) return;
 
+    clearManualTimers();
+    manualScrubbingRef.current = false;
+    hasActiveFlipRef.current = true;
+    pausedRef.current = true;
     setIsPaused(true);
     setFlippedCardKey(cardKey);
     setViewedMemories((prev) => {
@@ -143,18 +247,23 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
     if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
     timeoutRef.current = window.setTimeout(() => {
+      hasActiveFlipRef.current = false;
+      pausedRef.current = false;
       setFlippedCardKey(null);
       setIsPaused(false);
       timeoutRef.current = null;
     }, FLIP_DURATION_MS);
-  }, [flippedCardKey]);
+  }, [clearManualTimers, flippedCardKey]);
 
   const sprocketHoles = Array.from({ length: SPROCKET_COUNT });
 
   return (
     <section className="h-screen w-full overflow-hidden flex flex-col items-center justify-center px-0">
-      <h1 className="font-emilys text-4xl sm:text-6xl md:text-7xl text-foreground text-center mb-4 px-4 drop-shadow-lg">
-        {typedHeading}
+      <h1 className="font-aboreto font-bold text-4xl sm:text-6xl md:text-7xl text-foreground text-center mb-4 px-4 drop-shadow-lg">
+        <span>{typedHeading}</span>
+        {showCaret && (
+          <span aria-hidden="true" className="typewriter-caret typewriter-caret-thick" />
+        )}
       </h1>
 
       <div ref={viewportRef} className="relative w-full" style={{ height: "45vh" }}>

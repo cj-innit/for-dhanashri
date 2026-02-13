@@ -88,8 +88,25 @@
   font-family: 'Lora', serif;
 }
 
+.font-aboreto {
+  font-family: 'Aboreto', serif;
+}
+
 .font-pixel {
   font-family: 'Press Start 2P', monospace;
+}
+
+.typewriter-caret {
+  display: inline-block;
+  margin-left: 0.12em;
+  height: 0.95em;
+  vertical-align: -0.08em;
+  border-right: 0.12em solid currentColor;
+  animation: typewriter-blink 0.55s steps(1, end) infinite;
+}
+
+.typewriter-caret-thick {
+  border-right-width: 0.24em;
 }
 
 .glassmorphism {
@@ -137,11 +154,11 @@
   background: radial-gradient(
     circle at 35% 25%,
     rgba(255, 210, 224, 0.9),
-    rgba(255, 113, 152, 0.55) 52%,
+    rgba(243, 5, 68, 0.55) 52%,
     rgba(255, 82, 136, 0.14) 78%
   );
-  filter: blur(12px);
-  opacity: 0.78;
+  filter: blur(10px);
+  opacity: 0.98;
 }
 
 .page-bg-layer {
@@ -159,7 +176,7 @@
   z-index: 1;
   pointer-events: none;
   background: rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5 px);
   -webkit-backdrop-filter: blur(2.5px);
 }
 
@@ -291,6 +308,22 @@
     opacity: 0.84;
   }
   72% {
+    opacity: 1;
+  }
+}
+
+@keyframes typewriter-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter-caret {
+    animation: none;
     opacity: 1;
   }
 }
