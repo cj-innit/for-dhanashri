@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import CaptchaGate from "@/components/CaptchaGate";
 import FooterBar from "@/components/FooterBar";
 import { useCursor } from "@/lib/cursorContext";
+import { VALENTINE_DATA } from "@/lib/valentineData";
+import { preloadFilmReelImages } from "@/lib/filmReelPreload";
 
 const VerificationPage = () => {
   const navigate = useNavigate();
@@ -10,6 +12,7 @@ const VerificationPage = () => {
 
   useEffect(() => {
     setVariant("saturn");
+    void preloadFilmReelImages(VALENTINE_DATA.memories.map((memory) => memory.url));
   }, [setVariant]);
 
   return (

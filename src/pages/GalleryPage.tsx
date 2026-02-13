@@ -16,8 +16,9 @@ const GalleryPage = () => {
     <div className="relative h-screen overflow-hidden">
       <div
         className="page-bg-layer"
-        style={{ backgroundImage: "url('/background_images/film_reel_bg.jpg')" }}
+        style={{ backgroundImage: "url('/background_images/captcha_bg.png')" }}
       />
+      <div className="page-bg-blur" />
       <div className="page-bg-overlay" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.36), rgba(0,0,0,0.66))" }} />
 
       <div className="page-content-layer h-full">

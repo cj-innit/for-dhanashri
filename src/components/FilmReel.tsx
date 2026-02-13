@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { VALENTINE_DATA } from "@/lib/valentineData";
+import { preloadFilmReelImages } from "@/lib/filmReelPreload";
 
 interface FilmReelProps {
   onNext: () => void;
 }
 
 const DEFAULT_RATIO = 3 / 4;
-const PX_PER_SECOND = 120;
+const PX_PER_SECOND = 130;
 const FLIP_DURATION_MS = 7000;
 const SPROCKET_COUNT = 28;
 const REEL_COLOR = "#141414";
 const REEL_HEADING = "LIFE IS TRULY A MOVIE WITH YOU BAE!";
-const TYPE_INTERVAL_MS = 45;
+const TYPE_INTERVAL_MS = 75;
 
 const FilmReel = ({ onNext }: FilmReelProps) => {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -24,6 +25,7 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
 
   const [laneHeight, setLaneHeight] = useState(0);
   const [ratios, setRatios] = useState<number[]>([]);
+  const [assetsReady, setAssetsReady] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [flippedCardKey, setFlippedCardKey] = useState<number | null>(null);
   const [viewedMemories, setViewedMemories] = useState<Set<number>>(new Set());
@@ -43,27 +45,16 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
 
   useEffect(() => {
     let cancelled = false;
+    setAssetsReady(false);
 
-    const preloadRatios = async () => {
-      const loadedRatios = await Promise.all(
-        memories.map(
-          (memory) =>
-            new Promise<number>((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                const nextRatio = img.naturalWidth / Math.max(img.naturalHeight, 1);
-                resolve(Number.isFinite(nextRatio) && nextRatio > 0 ? nextRatio : DEFAULT_RATIO);
-              };
-              img.onerror = () => resolve(DEFAULT_RATIO);
-              img.src = memory.url;
-            }),
-        ),
-      );
-
-      if (!cancelled) setRatios(loadedRatios);
+    const preload = async () => {
+      const loadedRatios = await preloadFilmReelImages(memories.map((memory) => memory.url));
+      if (cancelled) return;
+      setRatios(loadedRatios.map((ratio) => (Number.isFinite(ratio) && ratio > 0 ? ratio : DEFAULT_RATIO)));
+      setAssetsReady(true);
     };
 
-    preloadRatios();
+    void preload();
 
     return () => {
       cancelled = true;
@@ -74,10 +65,12 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
     const track = trackRef.current;
     if (!track) return;
 
-    const halfWidth = track.scrollWidth / 2;
     animationRef.current?.cancel();
     animationRef.current = null;
     track.style.transform = "translateX(0)";
+    if (!assetsReady) return;
+
+    const halfWidth = track.scrollWidth / 2;
 
     if (!Number.isFinite(halfWidth) || halfWidth <= 0) return;
 
@@ -89,11 +82,11 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
 
     if (pausedRef.current) anim.pause();
     animationRef.current = anim;
-  }, []);
+  }, [assetsReady]);
 
   useEffect(() => {
     restartAnimation();
-  }, [restartAnimation, laneHeight, ratios]);
+  }, [restartAnimation, laneHeight, ratios, assetsReady]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -211,54 +204,60 @@ const FilmReel = ({ onNext }: FilmReelProps) => {
             className="absolute top-8 bottom-8 left-0 right-0 overflow-hidden"
             style={{ backgroundColor: REEL_COLOR }}
           >
-            <div ref={trackRef} className="flex h-full items-center gap-4 px-8 will-change-transform">
-              {duplicatedMemories.map((memory, i) => {
-                const memoryIndex = i % memories.length;
-                const ratio = ratios[memoryIndex] ?? DEFAULT_RATIO;
-                const computedWidth = laneHeight > 0 ? laneHeight * ratio : 220;
-                const isFlipped = flippedCardKey === i;
-                const isViewed = viewedMemories.has(memoryIndex);
+            {!assetsReady ? (
+              <div className="flex h-full items-center justify-center px-6">
+                <p className="font-outfit text-sm tracking-[0.2em] text-white/75">Loading memories...</p>
+              </div>
+            ) : (
+              <div ref={trackRef} className="flex h-full items-center gap-4 px-8 will-change-transform">
+                {duplicatedMemories.map((memory, i) => {
+                  const memoryIndex = i % memories.length;
+                  const ratio = ratios[memoryIndex] ?? DEFAULT_RATIO;
+                  const computedWidth = laneHeight > 0 ? laneHeight * ratio : 220;
+                  const isFlipped = flippedCardKey === i;
+                  const isViewed = viewedMemories.has(memoryIndex);
 
-                return (
-                  <div
-                    key={`${memory.url}-${i}`}
-                    className="h-full flex-shrink-0 cursor-pointer"
-                    style={{ width: `${computedWidth}px`, perspective: "1200px" }}
-                    onClick={() => handleCardClick(i, memoryIndex)}
-                  >
-                    <motion.div
-                      animate={{ rotateY: isFlipped ? 180 : 0 }}
-                      transition={{ duration: 0.7, ease: "easeInOut" }}
-                      className="relative h-full w-full"
-                      style={{ transformStyle: "preserve-3d" }}
+                  return (
+                    <div
+                      key={`${memory.url}-${i}`}
+                      className="h-full flex-shrink-0 cursor-pointer"
+                      style={{ width: `${computedWidth}px`, perspective: "1200px" }}
+                      onClick={() => handleCardClick(i, memoryIndex)}
                     >
-                      <div
-                        className="absolute inset-0 flex items-center justify-center overflow-hidden"
-                        style={{ backgroundColor: REEL_COLOR, backfaceVisibility: "hidden" }}
+                      <motion.div
+                        animate={{ rotateY: isFlipped ? 180 : 0 }}
+                        transition={{ duration: 0.7, ease: "easeInOut" }}
+                        className="relative h-full w-full"
+                        style={{ transformStyle: "preserve-3d" }}
                       >
-                        <img
-                          src={memory.url}
-                          alt={`Memory ${memoryIndex + 1}`}
-                          className="w-full h-full object-contain"
-                        />
-                        {!isViewed && (
-                          <span className="absolute top-2 right-2 w-3 h-3 rounded-full bg-red-600 animate-pulse" />
-                        )}
-                      </div>
+                        <div
+                          className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                          style={{ backgroundColor: REEL_COLOR, backfaceVisibility: "hidden" }}
+                        >
+                          <img
+                            src={memory.url}
+                            alt={`Memory ${memoryIndex + 1}`}
+                            className="w-full h-full object-contain"
+                          />
+                          {!isViewed && (
+                            <span className="absolute top-2 right-2 w-3 h-3 rounded-full bg-red-600 animate-pulse" />
+                          )}
+                        </div>
 
-                      <div
-                        className="absolute inset-0 bg-[hsl(0,0%,8%)] text-white flex items-center justify-center p-4"
-                        style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
-                      >
-                        <p className="font-lifesavers text-center text-sm sm:text-base font-bold leading-relaxed">
-                          {memory.description}
-                        </p>
-                      </div>
-                    </motion.div>
-                  </div>
-                );
-              })}
-            </div>
+                        <div
+                          className="absolute inset-0 bg-[hsl(0,0%,8%)] text-white flex items-center justify-center p-4"
+                          style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+                        >
+                          <p className="font-lora text-center text-sm sm:text-base font-semibold leading-relaxed">
+                            {memory.description}
+                          </p>
+                        </div>
+                      </motion.div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
