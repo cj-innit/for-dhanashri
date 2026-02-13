@@ -65,7 +65,7 @@ const FinalePage = () => {
         className="page-content-layer flex flex-col items-center gap-8 px-6 text-center"
       >
         <motion.div
-          animate={{ scale: [1, 1.06, 1] }}
+          animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
           className="heart-photo-frame"
         >
@@ -75,12 +75,10 @@ const FinalePage = () => {
             style={{ transform: "scale(1)" }}
           />
           <div className="heart-clip relative w-full h-full overflow-hidden border-2 border-red/55 shadow-[0_0_34px_rgba(225,0,0,0.85)]">
-            <motion.img
+            <img
               src="/finale_image.jpg"
               alt="Finale memory"
               className="w-full h-full object-cover"
-              animate={{ scale: [1.04, 1.09, 1.04] }}
-              transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
             />
           </div>
           <div className="heart-clip pointer-events-none absolute inset-0 border border-white/65" />
@@ -96,7 +94,7 @@ const FinalePage = () => {
           transition={{ delay: 1 }}
           className="font-lifesavers text-xl sm:text-2xl text-foreground/90 max-w-md font-bold"
         >
-          You are very important to me bae and I believe we can get through anything together. Happy Valentines Day!
+          You are very important to me, bae, and I believe we can get through anything together. Happy Valentine's Day!
         </motion.p>
 
         <motion.p
@@ -105,7 +103,7 @@ const FinalePage = () => {
           transition={{ delay: 1.8 }}
           className="font-outfit text-foreground/70 text-sm"
         >
-          — your #1 fan, supporter, and freak
+          — Your #1 fan, supporter, and freak
         </motion.p>
       </motion.div>
 

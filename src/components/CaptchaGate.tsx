@@ -13,7 +13,7 @@ const SCAN_TIMELINE = {
   activateAtMs: 550,
   completeAtMs: 4000,
   statusSteps: [
-    { atMs: 1300, text: "MATCHING BIOMETRIC SIGNATURE TO DHANASHRI" },
+    { atMs: 1300, text: "MATCHING BIOMETRIC SIGNATURE TO DHANASHRI PUROHIT" },
     { atMs: 3500, text: "ACCESS GRANTED" },
   ],
 } as const;
@@ -233,7 +233,7 @@ const CaptchaGate = ({ onVerified }: CaptchaGateProps) => {
               </div>
 
               <h2 className="status-flicker font-outfit text-cyan-100 text-lg tracking-[0.18em]">
-                SCANNING RETINA...
+                SCANNING YOUR PRETTY EYES (WARNING: MIGHT GET LOST IN THEM)
               </h2>
               <p aria-live="polite" className="mt-3 text-[11px] font-mono tracking-[0.18em] text-cyan-100/80">
                 {scanStatus}
