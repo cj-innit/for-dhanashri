@@ -1,12 +1,18 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { useCursor } from "@/lib/cursorContext";
 
 const NotFound = () => {
   const location = useLocation();
+  const { setVariant } = useCursor();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
+
+  useEffect(() => {
+    setVariant("heart");
+  }, [setVariant]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">

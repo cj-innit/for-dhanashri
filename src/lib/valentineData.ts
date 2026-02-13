@@ -1,9 +1,36 @@
 export const VALENTINE_DATA = {
-  captchaTiles: Array.from({ length: 9 }, (_, i) => `https://picsum.photos/seed/bf${i + 1}/200/200`),
-  filmStripImages: Array.from({ length: 12 }, (_, i) => ({
-    image: `https://picsum.photos/seed/memory${i + 1}/400/300`,
-    caption: `Memory #${i + 1} — A beautiful moment we shared together 💕`,
-  })),
+  captchaTiles: [
+    "/captcha_images/IMG_4751.jpg",
+    "/captcha_images/IMG_4758.jpg",
+    "/captcha_images/IMG_4762.jpg",
+    "/captcha_images/IMG_4771.jpg",
+    "/captcha_images/IMG_4772.jpg",
+    "/captcha_images/IMG_4773.jpg",
+    "/captcha_images/IMG_4774.jpg",
+    "/captcha_images/IMG_4775.jpg",
+    "/captcha_images/IMG_4776.jpg",
+  ],
+  memories: [
+    { url: "/film_reel_images/babies.jpg", description: "Our first Valentine's Day! I loved this day even though you were sick. I had such a great time pampering you and just being by your side. I was so excited to give you 'Baby' because I loved that cat (it deadass gave me such 'you' vibes)" },
+    { url: "/film_reel_images/bar_night.jpg", description: "Barsss! Bae I gotta say I really love going to the bars with you. I know you dont like to party a lot but those times when we get drunk tgt I really have a lot of fun. Dancing with you is so much fun and I just love to see you be all happy dancing with me. Those moments feel magical and I love it!" },
+    { url: "/film_reel_images/bday_fun_hot.PNG", description: "Total baddie bday girl! I love this pic cause it truly captures how fun, amazing, and pretty you are. (p.s. i think you look hot in this top even though you hated it." },
+    { url: "/film_reel_images/box_gf.jpg", description: "This day was so fun! Packing up my apt with you was such a lovely bonding experience lol. You are adorable and I have so much fun with you!" },
+    { url: "/film_reel_images/cali_hill.jpg", description: "CALLIII!! One of the best dates we had cause I got to be passenger princess lol. I loved your fav library, IKE's sandwich, and this hill view with you. But but but .... the highlight was def fucking on mishra's uncles bed. I love you my freak 😏" },
+    { url: "/film_reel_images/cali_lib.jpg", description: "ONE YEAR ANNIVERSARY!! Another amazing day with my bae. Building this LEGO set has to be one of the most fun things we have done (and we have done a lot of fun things). Sakanaya also hit so good. It was just a lovely day with bae! I am so grateful for finding someone like you to be my girlfriend. I am really very happy and comfortable with you bae. I love you loads." },
+    { url: "/film_reel_images/edm.jpg", description: "EDM DATE! My first edm scene with bae. This was a lovely day. Our shenanigans at Krannert were so fun and freaky lol. You were looking so godamnn HOTT. I was genuinely just waiting to fuck you 😏. You are gorgeous bae!" },
+    { url: "/film_reel_images/freaky_bar.jpg", description: "Oooh! talking about wanting to fuck you ... remember this bar day? The day we gained so much aura lol. Leaving the bar just to fuck and coming back has to be some of the craziest flexes. I love how you match my freak." },
+    { url: "/film_reel_images/grocery_brat.jpg", description: "Bae was standing under the BRAT sign right after getting me hard at a grocery store." },
+    { url: "/film_reel_images/hot_gf.jpg", description: "Just adding this picture cause while scrolling through my gallery I just like deadass saw this and stared at you for 5 minutes. Like honestly I can admire you for so long. You are just the hottest, smartest, goofiest, funniest cutie ever." },
+    { url: "/film_reel_images/joint.jpg", description: "Joints. Weed. What an essential theme of our relationship. We lowk might be dating only cause that night we both talked about eddies and weed at the halloween party lol. It led to that electric touch moment between us cause if you hadn't taken that eddie I dont think we would have talked to eo like that lol. I love my stoner gf and every joint session we have had together. You are my fav person to smoke with." },
+    { url: "/film_reel_images/lab.jpg", description: "ELHANSSS LABB! This was another place we made hella memories over summer and so many sems. I loved all those small moments we had of helping each other and working together and obviously raiding elhan's snack cupboard." },
+    { url: "/film_reel_images/love_cj.jpg", description: "This was a very wholesome date at cafe bene! Also that 'I LOVE YOU' with chocolate on the plate was lowk like very wholesome and I loved it. I know its not a big thing but lowk that small moment is very precious to me." },
+    { url: "/film_reel_images/metal_pp.jpg", description: "BAE'S BIGGG PP (backed by our recent research). I hadn't noticed this note you left me till so much later. You lowk love leaving surprises in my gallery since the start and I absolutely love it when I find them a few days later. Being silly with you has to be some of the most fun times ever." },
+    { url: "/film_reel_images/park_compass.jpg", description: "HALLOWEEEN WITH BAE! This has to be one of the most fun partying nights we have had. We went on so many side quests, danced together, made out outside vaari's place, and just had such a great time. You looked hot af dressed as magic mike and like always drunk me was tryna crack bad 😏" },
+    { url: "/film_reel_images/price_war.jpg", description: "PRICEEE WARSSSS! The day bae faced ultimate defeat. This was such a fun date too. We have had some very creative and fun dates. I loved walking around the store with you trying on diff shit and playing price wars. We should run this back fr." },
+    { url: "/film_reel_images/quad_movie.jpg", description: "QUAD MOVIEE!! Another magical day with my lovely bae even though we didn't get to see the movie it was very fun doing our picnic. Those tarts and the subway was so good. Even though champaign weather fucked us ... I enjoyed our night a lot. Also your glow band had to be a highlight cause you looked so cute with it." },
+    { url: "/film_reel_images/sewing.jpg", description: "Shoutout to my very helpful and talented bae! You fixed my pants and you stitched up sloppy!! You are def the GOAT. I love you so much and I really admire your creative talents bae. It is one of your biggest strengths." },
+    { url: "/film_reel_images/worm.jpg", description: "PENISSSS WORMMMM! I would like to start by apologizing to you for eating up the penis worm. I am really sorry bae. But this has to be one of our relationship highlights lol. We found a gummy worm w a dick like what were the chances of that lol. RIP penis worm he shall be missed." },
+  ],
   wordleLevels: [
     {
       word: "CALI",
@@ -25,7 +52,7 @@ export const VALENTINE_DATA = {
   footer: {
     status: "IN LOVE",
     heartRate: "110BPM",
-    target: "DHANASHRI_P",
+    target: "DHANASHRI_PUROHIT",
     mode: "VALENTINE_2026",
   },
 };

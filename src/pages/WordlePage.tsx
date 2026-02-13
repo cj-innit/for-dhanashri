@@ -1,15 +1,29 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import CustomCursor from "@/components/CustomCursor";
 import WordleGame from "@/components/WordleGame";
 import FooterBar from "@/components/FooterBar";
+import { useCursor } from "@/lib/cursorContext";
 
 const WordlePage = () => {
   const navigate = useNavigate();
+  const { setVariant } = useCursor();
+
+  useEffect(() => {
+    setVariant("handcuff");
+  }, [setVariant]);
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center">
-      <CustomCursor />
-      <WordleGame onAllComplete={() => navigate("/finale")} />
+    <div className="relative h-screen overflow-hidden flex flex-col items-center justify-center">
+      <div
+        className="page-bg-layer"
+        style={{ backgroundImage: "url('/background_images/wordle_bg.png')" }}
+      />
+      <div className="page-bg-blur" />
+      <div className="page-bg-overlay" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.38), rgba(0,0,0,0.58))" }} />
+
+      <div className="page-content-layer h-full w-full">
+        <WordleGame onAllComplete={() => navigate("/finale")} />
+      </div>
       <FooterBar />
     </div>
   );

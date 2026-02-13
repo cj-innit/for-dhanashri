@@ -1,191 +1,283 @@
-import { useRef, useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { VALENTINE_DATA } from "@/lib/valentineData";
 
 interface FilmReelProps {
-  onAllViewed: () => void;
+  onNext: () => void;
 }
 
-const ITEM_COUNT = VALENTINE_DATA.filmStripImages.length;
-const AUTO_SPEED = 0.5; // px per frame
-const FLIP_DURATION = 7000; // ms
+const DEFAULT_RATIO = 3 / 4;
+const PX_PER_SECOND = 120;
+const FLIP_DURATION_MS = 7000;
+const SPROCKET_COUNT = 28;
+const REEL_COLOR = "#141414";
+const REEL_HEADING = "LIFE IS TRULY A MOVIE WITH YOU BAE!";
+const TYPE_INTERVAL_MS = 45;
 
-const FilmReel = ({ onAllViewed }: FilmReelProps) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [paused, setPaused] = useState(false);
-  const [flippedIndex, setFlippedIndex] = useState<number | null>(null);
-  const [viewed, setViewed] = useState<Set<number>>(new Set());
-  const [transitioned, setTransitioned] = useState(false);
-  const animRef = useRef<number>(0);
+const FilmReel = ({ onNext }: FilmReelProps) => {
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const laneRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const animationRef = useRef<Animation | null>(null);
+  const timeoutRef = useRef<number | null>(null);
   const pausedRef = useRef(false);
 
-  // Keep ref in sync
-  useEffect(() => {
-    pausedRef.current = paused;
-  }, [paused]);
+  const [laneHeight, setLaneHeight] = useState(0);
+  const [ratios, setRatios] = useState<number[]>([]);
+  const [isPaused, setIsPaused] = useState(false);
+  const [flippedCardKey, setFlippedCardKey] = useState<number | null>(null);
+  const [viewedMemories, setViewedMemories] = useState<Set<number>>(new Set());
+  const [typedHeading, setTypedHeading] = useState("");
+  const topMaskId = useId();
+  const bottomMaskId = useId();
 
-  // Auto-scroll loop
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
+  const memories = VALENTINE_DATA.memories;
+  const duplicatedMemories = useMemo(() => [...memories, ...memories], [memories]);
 
-    const tick = () => {
-      if (!pausedRef.current && el) {
-        el.scrollLeft += AUTO_SPEED;
-        // Infinite loop: reset when halfway through duplicated content
-        const halfWidth = el.scrollWidth / 2;
-        if (el.scrollLeft >= halfWidth) {
-          el.scrollLeft -= halfWidth;
-        }
-      }
-      animRef.current = requestAnimationFrame(tick);
+  useEffect(() => {
+    pausedRef.current = isPaused;
+    if (!animationRef.current) return;
+    if (isPaused) animationRef.current.pause();
+    else animationRef.current.play();
+  }, [isPaused]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const preloadRatios = async () => {
+      const loadedRatios = await Promise.all(
+        memories.map(
+          (memory) =>
+            new Promise<number>((resolve) => {
+              const img = new Image();
+              img.onload = () => {
+                const nextRatio = img.naturalWidth / Math.max(img.naturalHeight, 1);
+                resolve(Number.isFinite(nextRatio) && nextRatio > 0 ? nextRatio : DEFAULT_RATIO);
+              };
+              img.onerror = () => resolve(DEFAULT_RATIO);
+              img.src = memory.url;
+            }),
+        ),
+      );
+
+      if (!cancelled) setRatios(loadedRatios);
     };
 
-    animRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animRef.current);
+    preloadRatios();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [memories]);
+
+  const restartAnimation = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    const halfWidth = track.scrollWidth / 2;
+    animationRef.current?.cancel();
+    animationRef.current = null;
+    track.style.transform = "translateX(0)";
+
+    if (!Number.isFinite(halfWidth) || halfWidth <= 0) return;
+
+    const duration = (halfWidth / PX_PER_SECOND) * 1000;
+    const anim = track.animate(
+      [{ transform: "translateX(0)" }, { transform: `translateX(-${halfWidth}px)` }],
+      { duration, easing: "linear", iterations: Infinity },
+    );
+
+    if (pausedRef.current) anim.pause();
+    animationRef.current = anim;
   }, []);
 
-  const handleImageClick = useCallback((index: number) => {
-    if (flippedIndex !== null) return;
+  useEffect(() => {
+    restartAnimation();
+  }, [restartAnimation, laneHeight, ratios]);
 
-    setPaused(true);
-    setFlippedIndex(index);
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const lane = laneRef.current;
+    if (!viewport || !lane) return;
 
-    const newViewed = new Set(viewed);
-    newViewed.add(index);
-    setViewed(newViewed);
+    const updateMeasurements = () => {
+      setLaneHeight(lane.clientHeight);
+      restartAnimation();
+    };
 
-    // Auto flip back after 7 seconds
-    setTimeout(() => {
-      setFlippedIndex(null);
-      setPaused(false);
+    updateMeasurements();
 
-      // Check if all viewed
-      if (newViewed.size >= ITEM_COUNT && !transitioned) {
-        setTransitioned(true);
-        setTimeout(() => onAllViewed(), 1000);
-      }
-    }, FLIP_DURATION);
-  }, [flippedIndex, viewed, onAllViewed, transitioned]);
+    const observer = new ResizeObserver(() => updateMeasurements());
+    observer.observe(viewport);
+    observer.observe(lane);
 
-  const sprocketHoles = Array.from({ length: 30 });
+    return () => observer.disconnect();
+  }, [restartAnimation]);
 
-  // Duplicate images for infinite loop
-  const images = [...VALENTINE_DATA.filmStripImages, ...VALENTINE_DATA.filmStripImages];
+  useEffect(() => {
+    return () => {
+      animationRef.current?.cancel();
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    setTypedHeading("");
+    let nextIndex = 0;
+    const timerId = window.setInterval(() => {
+      nextIndex += 1;
+      setTypedHeading(REEL_HEADING.slice(0, nextIndex));
+      if (nextIndex >= REEL_HEADING.length) window.clearInterval(timerId);
+    }, TYPE_INTERVAL_MS);
+
+    return () => window.clearInterval(timerId);
+  }, []);
+
+  
+
+  const handleCardClick = useCallback((cardKey: number, memoryIndex: number) => {
+    if (flippedCardKey !== null) return;
+
+    setIsPaused(true);
+    setFlippedCardKey(cardKey);
+    setViewedMemories((prev) => {
+      if (prev.has(memoryIndex)) return prev;
+      const next = new Set(prev);
+      next.add(memoryIndex);
+      return next;
+    });
+
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = window.setTimeout(() => {
+      setFlippedCardKey(null);
+      setIsPaused(false);
+      timeoutRef.current = null;
+    }, FLIP_DURATION_MS);
+  }, [flippedCardKey]);
+
+  const sprocketHoles = Array.from({ length: SPROCKET_COUNT });
 
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center px-0">
-      {/* Title */}
-      <motion.h1
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="font-emilys text-5xl sm:text-7xl md:text-8xl lg:text-9xl text-foreground text-center mb-8 px-4 drop-shadow-lg">HAPPY  VALENTINES DAY BAE!
+    <section className="h-screen w-full overflow-hidden flex flex-col items-center justify-center px-0">
+      <h1 className="font-emilys text-4xl sm:text-6xl md:text-7xl text-foreground text-center mb-4 px-4 drop-shadow-lg">
+        {typedHeading}
+      </h1>
 
+      <div ref={viewportRef} className="relative w-full" style={{ height: "45vh" }}>
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-8 z-20">
+            <svg className="w-full h-full" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <mask id={topMaskId}>
+                  <rect x="0" y="0" width="100" height="32" fill="white" />
+                  {sprocketHoles.map((_, i) => {
+                    const x = ((i + 0.5) / SPROCKET_COUNT) * 100;
+                    return <rect key={`top-hole-${i}`} x={x - 1.1} y={6.8} width="2.2" height="18.4" rx="0.56" fill="black" />;
+                  })}
+                </mask>
+              </defs>
+              <rect x="0" y="0" width="100" height="32" fill={REEL_COLOR} mask={`url(#${topMaskId})`} />
+              <line x1="0" y1="0.5" x2="100" y2="0.5" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+              {sprocketHoles.map((_, i) => {
+                const x = ((i + 0.5) / SPROCKET_COUNT) * 100;
+                return <rect key={`top-hole-stroke-${i}`} x={x - 1.1} y={6.8} width="2.2" height="18.4" rx="0.56" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.24" />;
+              })}
+            </svg>
+          </div>
 
-      </motion.h1>
+          <div className="absolute bottom-0 left-0 right-0 h-8 z-20">
+            <svg className="w-full h-full" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
+              <defs>
+                <mask id={bottomMaskId}>
+                  <rect x="0" y="0" width="100" height="32" fill="white" />
+                  {sprocketHoles.map((_, i) => {
+                    const x = ((i + 0.5) / SPROCKET_COUNT) * 100;
+                    return <rect key={`bottom-hole-${i}`} x={x - 1.1} y={6.8} width="2.2" height="18.4" rx="0.56" fill="black" />;
+                  })}
+                </mask>
+              </defs>
+              <rect x="0" y="0" width="100" height="32" fill={REEL_COLOR} mask={`url(#${bottomMaskId})`} />
+              <line x1="0" y1="31.5" x2="100" y2="31.5" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+              {sprocketHoles.map((_, i) => {
+                const x = ((i + 0.5) / SPROCKET_COUNT) * 100;
+                return <rect key={`bottom-hole-stroke-${i}`} x={x - 1.1} y={6.8} width="2.2" height="18.4" rx="0.56" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.24" />;
+              })}
+            </svg>
+          </div>
 
-      {/* Film Strip Container */}
-      <div className="relative w-full" style={{ height: "40vh" }}>
-        {/* Top sprocket holes - transparent cutouts */}
-        <div className="absolute top-0 left-0 right-0 h-6 bg-[hsl(0,0%,0%)] z-10 flex items-center justify-around px-2">
-          {sprocketHoles.map((_, i) =>
           <div
-            key={`top-${i}`}
-            className="w-4 h-5 rounded-sm flex-shrink-0"
-            style={{
-              background: "hsl(var(--background))",
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)"
-            }} />
+            ref={laneRef}
+            className="absolute top-8 bottom-8 left-0 right-0 overflow-hidden"
+            style={{ backgroundColor: REEL_COLOR }}
+          >
+            <div ref={trackRef} className="flex h-full items-center gap-4 px-8 will-change-transform">
+              {duplicatedMemories.map((memory, i) => {
+                const memoryIndex = i % memories.length;
+                const ratio = ratios[memoryIndex] ?? DEFAULT_RATIO;
+                const computedWidth = laneHeight > 0 ? laneHeight * ratio : 220;
+                const isFlipped = flippedCardKey === i;
+                const isViewed = viewedMemories.has(memoryIndex);
 
-          )}
-        </div>
-
-        {/* Bottom sprocket holes */}
-        <div className="absolute bottom-0 left-0 right-0 h-6 bg-[hsl(0,0%,0%)] z-10 flex items-center justify-around px-2">
-          {sprocketHoles.map((_, i) =>
-          <div
-            key={`bot-${i}`}
-            className="w-4 h-5 rounded-sm flex-shrink-0"
-            style={{
-              background: "hsl(var(--background))",
-              boxShadow: "inset 0 1px 2px rgba(0,0,0,0.5)"
-            }} />
-
-          )}
-        </div>
-
-        {/* Black film borders */}
-        <div className="absolute inset-0 border-y-[24px] border-[hsl(0,0%,0%)] pointer-events-none z-[5]" />
-
-        {/* Scrolling content */}
-        <div
-          ref={scrollRef}
-          className="absolute inset-0 overflow-x-hidden overflow-y-hidden bg-[hsl(0,0%,0%)]"
-          style={{ scrollbarWidth: "none" }}>
-
-          <div className="flex h-full items-center gap-1 px-1 py-7">
-            {images.map((item, i) => {
-              const realIndex = i % ITEM_COUNT;
-              const isFlipped = flippedIndex === realIndex;
-
-              return (
-                <div
-                  key={i}
-                  onClick={() => handleImageClick(realIndex)}
-                  className="relative flex-shrink-0 h-[calc(100%-8px)] cursor-pointer"
-                  style={{
-                    aspectRatio: "9/16",
-                    perspective: "800px"
-                  }}>
-
-                  <AnimatePresence mode="wait" initial={false}>
-                    {!isFlipped ?
+                return (
+                  <div
+                    key={`${memory.url}-${i}`}
+                    className="h-full flex-shrink-0 cursor-pointer"
+                    style={{ width: `${computedWidth}px`, perspective: "1200px" }}
+                    onClick={() => handleCardClick(i, memoryIndex)}
+                  >
                     <motion.div
-                      key="front"
-                      initial={{ rotateY: 90 }}
-                      animate={{ rotateY: 0 }}
-                      exit={{ rotateY: -90 }}
-                      transition={{ duration: 0.4 }}
-                      className="absolute inset-0 rounded-sm overflow-hidden">
-
+                      animate={{ rotateY: isFlipped ? 180 : 0 }}
+                      transition={{ duration: 0.7, ease: "easeInOut" }}
+                      className="relative h-full w-full"
+                      style={{ transformStyle: "preserve-3d" }}
+                    >
+                      <div
+                        className="absolute inset-0 flex items-center justify-center overflow-hidden"
+                        style={{ backgroundColor: REEL_COLOR, backfaceVisibility: "hidden" }}
+                      >
                         <img
-                        src={item.image}
-                        alt={`Memory ${realIndex + 1}`}
-                        className="w-full h-full object-cover" />
+                          src={memory.url}
+                          alt={`Memory ${memoryIndex + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                        {!isViewed && (
+                          <span className="absolute top-2 right-2 w-3 h-3 rounded-full bg-red-600 animate-pulse" />
+                        )}
+                      </div>
 
-                        {!viewed.has(realIndex) &&
-                      <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary animate-pulse" />
-                      }
-                      </motion.div> :
-
-                    <motion.div
-                      key="back"
-                      initial={{ rotateY: 90 }}
-                      animate={{ rotateY: 0 }}
-                      exit={{ rotateY: -90 }}
-                      transition={{ duration: 0.4 }}
-                      className="absolute inset-0 rounded-sm bg-[hsl(0,0%,8%)] flex items-center justify-center p-3">
-
-                        <p className="font-lifesavers text-white text-center text-xs sm:text-sm font-bold leading-relaxed">
-                          {item.caption}
+                      <div
+                        className="absolute inset-0 bg-[hsl(0,0%,8%)] text-white flex items-center justify-center p-4"
+                        style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+                      >
+                        <p className="font-lifesavers text-center text-sm sm:text-base font-bold leading-relaxed">
+                          {memory.description}
                         </p>
-                      </motion.div>
-                    }
-                  </AnimatePresence>
-                </div>);
-
-            })}
+                      </div>
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Progress indicator */}
-      <p className="font-outfit text-foreground/70 text-sm mt-4">
-        {viewed.size}/{ITEM_COUNT} memories viewed — click each photo to reveal its story
+      <p className="font-outfit text-foreground/75 text-sm mt-4 text-center px-4">
+        Tap a memory to pause, flip, and read its note.
       </p>
-    </section>);
+      <p className="font-outfit text-foreground/75 text-sm mt-1 text-center px-4">
+        {viewedMemories.size}/{memories.length} memories viewed
+      </p>
 
+      <button
+        onClick={onNext}
+        className="mt-4 px-8 py-3 rounded-full bg-primary text-primary-foreground font-outfit font-semibold hover:opacity-90 transition-opacity"
+      >
+        Next
+      </button>
+    </section>
+  );
 };
 
 export default FilmReel;
